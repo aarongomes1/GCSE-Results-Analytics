@@ -1,0 +1,103 @@
+﻿@page "/subjects"
+@rendermode InteractiveServer
+
+@inject ResultsModels.Structure.Results Results
+
+<PageTitle>Subjects</PageTitle>
+
+
+<h1>Subjects</h1>
+
+<p>Shows the average grades per subject.</p>
+
+<QuickGrid Items="@FilteredSubjects" Class="table" Pagination="pagination">
+    <PropertyColumn Property="@(x => x.SubjectName)" Sortable="true">
+        <ColumnOptions>
+            <div class="search-box">
+                <input type="search" autofocus @bind="subjectFilter" @bind:event="oninput" placeholder="Subject..." />
+            </div>
+        </ColumnOptions>
+    </PropertyColumn>
+    <PropertyColumn Property="@(x => new { AverageGrade = x.AverageGrade!.Value }.AverageGrade )" Sortable="true" />
+    <PropertyColumn Property="@(x => new { NumberOfStudents = x.Students.Count }.NumberOfStudents )" Sortable="true" />
+
+    <TemplateColumn Context="subject">
+        <a href="@($"subject?id={subject.SubjectKey}")">View</a>
+    </TemplateColumn>
+</QuickGrid>
+
+<Paginator State="pagination" />
+
+<br>
+<h3>Average Grade Per Gender</h3>
+
+<SfChart Title="Male v Female Performance">
+    <ChartPrimaryXAxis ValueType="@Syncfusion.Blazor.Charts.ValueType.Category" Interval="1">
+        <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+    </ChartPrimaryXAxis>
+    <ChartArea>
+        <ChartAreaBorder Width="0.2"></ChartAreaBorder>
+    </ChartArea>
+    <ChartPrimaryYAxis Title="Average Grade">
+        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+        <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+    </ChartPrimaryYAxis>
+    <ChartSeriesCollection>
+        <ChartSeries DataSource="@GenderAverages" XName="Subject" YName="Male_Average" Name="Male" GroupName="Male" ColumnWidth="0.7" ColumnSpacing="0.1" Type="ChartSeriesType.Column">
+            <ChartMarker>
+                <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                    <ChartDataLabelFont Color="#ffffff" FontWeight="600"></ChartDataLabelFont>
+                </ChartDataLabel>
+            </ChartMarker>
+        </ChartSeries>
+
+        <ChartSeries DataSource="@GenderAverages" XName="Subject" YName="Female_Average" Name="Female" GroupName="Female" ColumnWidth="0.7" ColumnSpacing="0.1" Type="ChartSeriesType.Column">
+            <ChartMarker>
+                <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                    <ChartDataLabelFont Color="#ffffff" FontWeight="600"></ChartDataLabelFont>
+                </ChartDataLabel>
+            </ChartMarker>
+        </ChartSeries>
+    </ChartSeriesCollection>
+    <ChartLegendSettings Visible="true"></ChartLegendSettings>
+    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+</SfChart>
+
+@code
+{
+    PaginationState pagination = new PaginationState { ItemsPerPage = 15 };
+
+    private string subjectFilter = string.Empty;
+
+    IQueryable<ResultsModels.Structure.Subject> FilteredSubjects
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(subjectFilter))
+            {
+                return Results.Subjects.AsQueryable();
+            }
+
+            return Results.Subjects.Where(x => x.SubjectName.Contains(subjectFilter, StringComparison.OrdinalIgnoreCase)).AsQueryable();
+        }
+    }
+}
+
+@code
+{
+    public class AverageData
+    {
+        public required string Subject { get; set; }
+        public required decimal Male_Average { get; set; }
+        public required decimal Female_Average { get; set; }
+    }
+
+    List<AverageData> GenderAverages
+    {
+        get
+        {
+            return Results.Subjects.Select(x => new AverageData() { Subject = x.SubjectName, Female_Average = x.FemaleAverageGrade!.Value, Male_Average = x.MaleAverageGrade!.Value }).ToList();
+        }
+    }
+}

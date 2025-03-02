@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GradeAverageCalculator": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\temp\\GCSEResultAnalytics\\results.db\""
+    }
+  }
+}

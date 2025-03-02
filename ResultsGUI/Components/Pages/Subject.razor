@@ -1,0 +1,164 @@
+﻿@page "/subject"
+@rendermode InteractiveServer
+
+@inject NavigationManager NavManager
+@inject ResultsModels.Structure.Results Results
+
+<PageTitle>@QueryStringGetter.GetSubject(Results, NavManager.Uri).SubjectName</PageTitle>
+
+<h1>@QueryStringGetter.GetSubject(Results, NavManager.Uri).SubjectName</h1>
+
+<br>
+<table>
+    <tr>
+        <td>Board:</td>
+        <td>@QueryStringGetter.GetSubject(Results, NavManager.Uri).Board</td>
+    </tr>
+    <tr>
+        <td>Number of Students:</td>
+        <td>@QueryStringGetter.GetSubject(Results, NavManager.Uri).Students.Count</td>
+    </tr>
+    <tr>
+        <td>Average Grade:</td>
+        <td>@QueryStringGetter.GetSubject(Results, NavManager.Uri).AverageGrade!.Value</td>
+    </tr>
+</table>
+<br>
+
+<h3>Grades by Number of Students</h3>
+
+<QuickGrid Items="@QueryStringGetter.GetSubject(Results, NavManager.Uri).GradeCounts.AsQueryable()" Class="table">
+    <PropertyColumn Property="@(x => x.Grade)" Sortable="true"/>
+    <PropertyColumn Property="@(x => x.Count)" Sortable="true" />
+</QuickGrid>
+<br>
+
+<br>
+<h3>Average Grade Per Gender</h3>
+
+<SfChart Title="Male v Female Performance">
+    <ChartPrimaryXAxis ValueType="@Syncfusion.Blazor.Charts.ValueType.Category" Interval="1">
+        <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+    </ChartPrimaryXAxis>
+    <ChartArea>
+        <ChartAreaBorder Width="0.2"></ChartAreaBorder>
+    </ChartArea>
+    <ChartPrimaryYAxis Title="Average Grade">
+        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+        <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+    </ChartPrimaryYAxis>
+    <ChartSeriesCollection>
+        <ChartSeries DataSource="@GenderAverages" XName="Subject" YName="Male_Average" Name="Male" GroupName="Male" ColumnWidth="0.5" ColumnSpacing="0.3" Type="ChartSeriesType.Column">
+            <ChartMarker>
+                <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                    <ChartDataLabelFont Color="#ffffff" FontWeight="600"></ChartDataLabelFont>
+                </ChartDataLabel>
+            </ChartMarker>
+        </ChartSeries>
+
+        <ChartSeries DataSource="@GenderAverages" XName="Subject" YName="Female_Average" Name="Female" GroupName="Female" ColumnWidth="0.5" ColumnSpacing="0.3" Type="ChartSeriesType.Column">
+            <ChartMarker>
+                <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                    <ChartDataLabelFont Color="#ffffff" FontWeight="600"></ChartDataLabelFont>
+                </ChartDataLabel>
+            </ChartMarker>
+        </ChartSeries>
+    </ChartSeriesCollection>
+    <ChartLegendSettings Visible="true"></ChartLegendSettings>
+    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+</SfChart>
+
+<h3>Grades</h3>
+
+<QuickGrid Items="@FilteredStudents" Class="table" Pagination="pagination">
+    <PropertyColumn Property="@(x => x.FirstName)" Sortable="true">
+        <ColumnOptions>
+            <div>
+                <input type="search" autofocus @bind="firstNameFilter" @bind:event="oninput" placeholder="First name..." />
+            </div>
+        </ColumnOptions>
+    </PropertyColumn>
+    <PropertyColumn Property="@(x => x.LastName)" Sortable="true">
+        <ColumnOptions>
+            <div>
+                <input type="search" autofocus @bind="lastNameFilter" @bind:event="oninput" placeholder="Last name..." />
+            </div>
+        </ColumnOptions>
+    </PropertyColumn>
+    <PropertyColumn Property="@(x => x.Gender)" Sortable="true" />
+    <PropertyColumn Property="@(x => x.Results.Single(x => x.Subject.SubjectKey == @QueryStringGetter.GetSubject(Results, NavManager.Uri).SubjectKey).Result.Grade)" Sortable="true" />
+
+    <TemplateColumn Context="student">
+        <a href="@($"student?id={student.StudentKey}")">View</a>
+    </TemplateColumn>
+</QuickGrid>
+
+<Paginator State="pagination" />
+
+@code {
+    private class QueryStringGetter
+    {
+        public static string GetQueryString(string url)
+        {
+            var queryPart = url.Split("?").Last();
+            var keyValue = queryPart.Split("=");
+            if (!keyValue.First().Trim().Equals("id", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Provide correct query");
+            }
+
+            return keyValue.Last().Trim();
+        }
+
+        public static ResultsModels.Structure.Subject GetSubject(ResultsModels.Structure.Results results, string uri)
+        {
+            var subjectKey = int.Parse(GetQueryString(uri));
+
+            var subject = results.Subjects.Single(x => x.SubjectKey == subjectKey);
+
+            return subject;
+        }
+    }
+}
+
+@code
+{
+    public class AverageData
+    {
+        public required string Subject { get; set; }
+        public required decimal Male_Average { get; set; }
+        public required decimal Female_Average { get; set; }
+    }
+
+    List<AverageData> GenderAverages
+    {
+        get
+        {
+            var subject = QueryStringGetter.GetSubject(Results, NavManager.Uri);
+            return [new AverageData() { Subject = subject.SubjectName, Female_Average = subject.FemaleAverageGrade!.Value, Male_Average = subject.MaleAverageGrade!.Value } ];
+        }
+    }
+}
+
+@code
+{
+    PaginationState pagination = new PaginationState { ItemsPerPage = 15 };
+
+    private string firstNameFilter = string.Empty;
+    private string lastNameFilter = string.Empty;
+
+    IQueryable<ResultsModels.Structure.Student> FilteredStudents
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(firstNameFilter) && string.IsNullOrEmpty(lastNameFilter))
+            {
+                return @QueryStringGetter.GetSubject(Results, NavManager.Uri).Students.AsQueryable();
+            }
+
+            return @QueryStringGetter.GetSubject(Results, NavManager.Uri).Students.Where(x => (!string.IsNullOrWhiteSpace(firstNameFilter) && x.FirstName.Contains(firstNameFilter, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(lastNameFilter) && x.LastName.Contains(lastNameFilter, StringComparison.OrdinalIgnoreCase))).AsQueryable();
+        }
+    }
+}

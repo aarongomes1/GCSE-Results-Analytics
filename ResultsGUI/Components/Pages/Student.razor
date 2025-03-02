@@ -1,0 +1,59 @@
+﻿@page "/student"
+@rendermode InteractiveServer
+
+@inject NavigationManager NavManager
+@inject ResultsModels.Structure.Results Results
+
+<PageTitle>@QueryStringGetter.GetStudent(Results, NavManager.Uri).GetFullName()</PageTitle>
+
+<h1>@QueryStringGetter.GetStudent(Results, NavManager.Uri).GetFullName()</h1>
+
+<br>
+<table width="50%">
+    <tr>
+        <td>Form:</td>
+        <td>@QueryStringGetter.GetStudent(Results, NavManager.Uri).Form!.Name</td>
+    </tr>
+    <tr>
+        <td>Average Grade:</td>
+        <td>@QueryStringGetter.GetStudent(Results, NavManager.Uri).AverageGrade!.Value</td>
+    </tr>
+</table>
+<br>
+
+<h3>Grades</h3>
+
+<QuickGrid Items="@QueryStringGetter.GetStudent(Results, NavManager.Uri).Results.AsQueryable()" Class="table">
+    <PropertyColumn Property="@(x => x.Subject.SubjectName)" Sortable="true" />
+    <PropertyColumn Property="@(x => x.Result.Grade)" Sortable="true" />
+
+    <TemplateColumn Context="result">
+        <a href="@($"subject?id={result.Subject.SubjectKey}")">View</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private class QueryStringGetter
+    {
+        public static string GetQueryString(string url)
+        {
+            var queryPart = url.Split("?").Last();
+            var keyValue = queryPart.Split("=");
+            if (!keyValue.First().Trim().Equals("id", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Provide correct query");
+            }
+
+            return keyValue.Last().Trim();
+        }
+
+        public static ResultsModels.Structure.Student GetStudent(ResultsModels.Structure.Results results, string uri)
+        {
+            var studentKey = int.Parse(GetQueryString(uri));
+
+            var student = results.Students.Single(x => x.StudentKey == studentKey);
+
+            return student;
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GCSEResultsFileConverter": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\temp\\GCSEResultAnalytics\\Input file\\input.csv\"\r\n\"C:\\temp\\GCSEResultAnalytics\\Input file\\results_points.csv\"\r\n\"C:\\temp\\GCSEResultAnalytics\\results.db\""
+    }
+  }
+}

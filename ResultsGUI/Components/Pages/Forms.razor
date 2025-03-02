@@ -1,0 +1,76 @@
+﻿@page "/forms"
+
+@rendermode InteractiveServer
+
+@inject ResultsModels.Structure.Results Results
+
+<PageTitle>Forms</PageTitle>
+
+<h1>Forms</h1>
+
+<p>Shows the average grades per form.</p>
+<script src="_content/Syncfusion.Blazor/scripts/syncfusion-blazor.min.js" type="text/javascript"></script>
+
+<QuickGrid Items="@Results.Forms.AsQueryable()" Class="table">
+    <PropertyColumn Property="@(p => new{Form = p.Name}.Form)" Sortable="true" />
+    <PropertyColumn Property="@(p => new { AverageGrade = p.AverageGrade!.Value }.AverageGrade)" Sortable="true" />
+    <PropertyColumn Property="@(p => new{NumberOfStudents = p.Students.Count}.NumberOfStudents)" Sortable="true" />
+
+    <TemplateColumn Context="form">
+        <a href="@($"form?name={form.Name}")">View</a>
+    </TemplateColumn>
+</QuickGrid>
+
+<br>
+<h3>Average Grade Per Gender</h3>
+
+<SfChart Title="Male v Female Performance">
+    <ChartPrimaryXAxis ValueType="@Syncfusion.Blazor.Charts.ValueType.Category" Interval="1">
+        <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+    </ChartPrimaryXAxis>
+    <ChartArea>
+        <ChartAreaBorder Width="0.2"></ChartAreaBorder>
+    </ChartArea>
+    <ChartPrimaryYAxis Title="Average Grade">
+        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+        <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+    </ChartPrimaryYAxis>
+    <ChartSeriesCollection>
+        <ChartSeries DataSource="@GenderAverages" XName="Form" YName="Male_Average" Name="Male" GroupName="Male" ColumnWidth="0.7" ColumnSpacing="0.1" Type="ChartSeriesType.Column">
+            <ChartMarker>
+                <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                    <ChartDataLabelFont Color="#ffffff" FontWeight="600"></ChartDataLabelFont>
+                </ChartDataLabel>
+            </ChartMarker>
+        </ChartSeries>
+
+         <ChartSeries DataSource="@GenderAverages" XName="Form" YName="Female_Average" Name="Female" GroupName="Female" ColumnWidth="0.7" ColumnSpacing="0.1" Type="ChartSeriesType.Column">
+            <ChartMarker>
+                <ChartDataLabel Visible="true" Position="LabelPosition.Top">
+                    <ChartDataLabelFont Color="#ffffff" FontWeight="600"></ChartDataLabelFont>
+                </ChartDataLabel>
+            </ChartMarker>
+         </ChartSeries>
+    </ChartSeriesCollection>
+    <ChartLegendSettings Visible="true"></ChartLegendSettings>
+    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+</SfChart>
+
+@code
+{
+    public class AverageData
+    {
+        public required string Form { get; set; }
+        public required decimal Male_Average { get; set; }
+        public required decimal Female_Average { get; set; }
+    }
+
+    List<AverageData> GenderAverages
+    {
+        get
+        {
+            return Results.Forms.Select(x => new AverageData() { Form = x.Name, Female_Average = x.FemaleAverageGrade!.Value, Male_Average = x.MaleAverageGrade!.Value }).ToList();
+        }
+    }
+}
